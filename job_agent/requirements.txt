@@ -1,0 +1,10 @@
+flask
+sqlalchemy
+flask-sqlalchemy
+python-dotenv
+python-jobspy
+google-generativeai
+python-docx
+requests
+markdown
+beautifulsoup4

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Configuration Settings</h1>
+        <p class="mt-2 text-sm text-gray-600">Define search parameters and upload your Master CV for tailoring.</p>
+    </div>
+
+    <form method="POST" action="/settings" class="space-y-8 divide-y divide-gray-200">
+        
+        <!-- Search Config Section -->
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Job Search Parameters</h3>
+                <p class="mt-1 text-sm text-gray-500">Configure what JobSpy will look for.</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <!-- Search Term -->
+                <div class="sm:col-span-3">
+                    <label for="search_term" class="block text-sm font-medium text-gray-700">Search Term / Role Title</label>
+                    <div class="mt-1">
+                        <input type="text" name="search_term" id="search_term" value="{{ config.search_term if config else '' }}" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border" required>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="sm:col-span-3">
+                    <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
+                    <div class="mt-1">
+                        <select multiple name="location" id="location" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border bg-white h-48" required>
+                            <optgroup label="Ireland">
+                                <option value="Dublin, Ireland" {% if config and 'Dublin, Ireland' in config.location %}selected{% endif %}>Dublin</option>
+                                <option value="Cork, Ireland" {% if config and 'Cork, Ireland' in config.location %}selected{% endif %}>Cork</option>
+                                <option value="Limerick, Ireland" {% if config and 'Limerick, Ireland' in config.location %}selected{% endif %}>Limerick</option>
+                            </optgroup>
+                            <optgroup label="The Netherlands">
+                                <option value="Amsterdam, Netherlands" {% if config and 'Amsterdam, Netherlands' in config.location %}selected{% endif %}>Amsterdam</option>
+                                <option value="Rotterdam, Netherlands" {% if config and 'Rotterdam, Netherlands' in config.location %}selected{% endif %}>Rotterdam</option>
+                                <option value="The Hague, Netherlands" {% if config and 'The Hague, Netherlands' in config.location %}selected{% endif %}>The Hague</option>
+                                <option value="Utrecht, Netherlands" {% if config and 'Utrecht, Netherlands' in config.location %}selected{% endif %}>Utrecht</option>
+                                <option value="Eindhoven, Netherlands" {% if config and 'Eindhoven, Netherlands' in config.location %}selected{% endif %}>Eindhoven</option>
+                                <option value="Tilburg, Netherlands" {% if config and 'Tilburg, Netherlands' in config.location %}selected{% endif %}>Tilburg</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Hold Cmd (Mac) or Ctrl (Windows) to select multiple cities.</p>
+                </div>
+
+                <!-- Results Wanted -->
+                <div class="sm:col-span-2">
+                    <label for="results_wanted" class="block text-sm font-medium text-gray-700">Results Wanted</label>
+                    <div class="mt-1">
+                        <input type="number" name="results_wanted" id="results_wanted" value="{{ config.results_wanted if config else 30 }}" min="1" max="100" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border" required>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Per source (LinkedIn/Indeed).</p>
+                </div>
+
+                <!-- Hours Old -->
+                <div class="sm:col-span-2">
+                    <label for="hours_old" class="block text-sm font-medium text-gray-700">Hours Old (Max)</label>
+                    <div class="mt-1">
+                        <input type="number" name="hours_old" id="hours_old" value="{{ config.hours_old if config else 72 }}" min="1" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border" required>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Age limit of job postings.</p>
+                </div>
+
+                <!-- Scoring Engine Selection -->
+                <div class="sm:col-span-4 border-t border-gray-200 mt-4 pt-6">
+                    <label for="scoring_engine" class="block text-sm font-medium text-gray-700">Scoring Engine</label>
+                    <div class="mt-1">
+                        <select name="scoring_engine" id="scoring_engine" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border bg-white" required onchange="toggleEngineFields()">
+                            <option value="ollama" {% if not config or config.scoring_engine == 'ollama' %}selected{% endif %}>🤖 Ollama (Local AI - Requires 8GB+ RAM)</option>
+                            <option value="gemini" {% if config and config.scoring_engine == 'gemini' %}selected{% endif %}>☁️ Gemini (Cloud AI - Requires API Key)</option>
+                            <option value="keyword" {% if config and config.scoring_engine == 'keyword' %}selected{% endif %}>🔑 Keyword Matcher (Bypass AI)</option>
+                            <option value="none" {% if config and config.scoring_engine == 'none' %}selected{% endif %}>📥 Save All (No Filtering)</option>
+                        </select>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Choose how the pipeline evaluates scraped jobs.</p>
+                </div>
+
+                <!-- Threshold (Hidden for Keyword / None) -->
+                <div class="sm:col-span-2 mt-4 pt-6" id="threshold_container">
+                    <label for="score_threshold" class="block text-sm font-medium text-gray-700">Filtering Threshold (1-10)</label>
+                    <div class="mt-1">
+                        <input type="number" name="score_threshold" id="score_threshold" value="{{ config.score_threshold if config else 7 }}" min="1" max="10" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border">
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Minimum AI score to save a job.</p>
+                </div>
+
+                <!-- Keywords Input (Hidden unless Keyword engine selected) -->
+                <div class="sm:col-span-6" id="keywords_container" style="display: none;">
+                    <label for="keywords" class="block text-sm font-medium text-gray-700">Search Keywords (Comma Separated)</label>
+                    <div class="mt-1">
+                        <input type="text" name="keywords" id="keywords" value="{{ config.keywords if config else '' }}" placeholder="e.g. legal intern, software engineer, junior" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border">
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Jobs containing any of these exact phrases will be saved.</p>
+                </div>
+            </div>
+        </div>
+
+<script>
+    function toggleEngineFields() {
+        const engine = document.getElementById('scoring_engine').value;
+        const thresholdContainer = document.getElementById('threshold_container');
+        const keywordsContainer = document.getElementById('keywords_container');
+        
+        if (engine === 'keyword') {
+            thresholdContainer.style.display = 'none';
+            keywordsContainer.style.display = 'block';
+        } else if (engine === 'none') {
+            thresholdContainer.style.display = 'none';
+            keywordsContainer.style.display = 'none';
+        } else {
+            // Ollama or Gemini
+            thresholdContainer.style.display = 'block';
+            keywordsContainer.style.display = 'none';
+        }
+    }
+    
+    // Run on init
+    window.addEventListener('DOMContentLoaded', toggleEngineFields);
+</script>
+
+        <!-- Master CV Section -->
+        <div class="pt-8 space-y-6 flex flex-col h-full">
+            <div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Master CV</h3>
+                <p class="mt-1 text-sm text-gray-500">Paste your comprehensive CV here. Gemini will use this to generate targeted resumes.</p>
+            </div>
+            
+            <div class="flex-grow">
+                <label for="master_cv_content" class="sr-only">Master CV Content</label>
+                <textarea id="master_cv_content" name="master_cv_content" rows="20" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border border-gray-300 rounded-lg p-4 font-mono text-xs leading-relaxed" required>{{ master_cv }}</textarea>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="pt-5 pb-10">
+            <div class="flex justify-end">
+                <a href="/" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500">
+                    Cancel
+                </a>
+                <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500">
+                    Save Configuration
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

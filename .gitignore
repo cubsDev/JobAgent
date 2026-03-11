@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Database
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.*
+
+# Personal / sensitive files
+job_agent/master_cv.txt
+
+# Outputs
+job_agent/static/outputs/
+
+# macOS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
